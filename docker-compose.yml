@@ -16,7 +16,7 @@ services:
       - "443:443"
     labels:
       - traefik.enable=true
-      - traefik.docker.network=global
+      - traefik.docker.network=traefik
       - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.rule=Host(`traefik.<YOUR_DOMAIN>.com`)  # FIXME
