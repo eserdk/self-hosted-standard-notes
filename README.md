@@ -69,6 +69,14 @@ You'd need to adjust how often you want to create snapshots using the `BACKUP_CR
 
 Click [here](https://github.com/Lobaro/restic-backup-docker#environment-variables) for more info.
 
+### Traefik
+
+Replace `certificatesResolvers.letsencrypt.acme.email` with your email.
+
+### docker-compose.yml
+
+I marked almost everything that needs to be adjusted with `FIXME`, but could miss something.
+
 # How to use
 
 Once you start the server with `docker compose up -d`, it becomes accessible on 443 port (
