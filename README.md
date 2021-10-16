@@ -1,8 +1,8 @@
 # Self Hosted Standard Notes Configuration
 
 This repository contains configuration needed to deploy self-hosted Standard Notes server.  
-Configuration includes automated database backups as well as their encryption and storing to S3
-bucket. It also includes Standard Notes extensions automated updater and server.
+Configuration includes periodic database backups as well as their encryption and storing to S3
+bucket. It also includes Standard Notes extensions periodic updater and server.
 
 ---
 
