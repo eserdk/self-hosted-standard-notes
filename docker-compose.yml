@@ -1,0 +1,252 @@
+version: "3.8"
+services:
+  traefik:
+    image: traefik:2.5  # stable as of 16.10.2021
+    container_name: traefik
+    user: 1000:1000
+    networks:
+      - traefik
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/config.yml:/traefik.yml
+      - ./traefik/certs/:/certs/  # <--- target directory for storing generated certificates
+    ports:
+      - "80:80"
+      - "443:443"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=global
+      - traefik.http.routers.dashboard.service=api@internal
+      - traefik.http.routers.dashboard.entrypoints=websecure
+      - traefik.http.routers.dashboard.rule=Host(`traefik.<YOUR_DOMAIN>.com`)  # FIXME
+      - traefik.http.routers.dashboard.tls=true
+      - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
+      - traefik.http.routers.dashboard.middlewares=auth
+      - traefik.http.middlewares.auth.digestauth.users=eserdk:traefik:1f23f4775a51a0e3c6dedf91b4c28531  # FIXME
+    healthcheck:
+      test: [ "CMD", "traefik" ,"healthcheck" ]
+      interval: 30s
+      timeout: 3s
+      retries: 30
+
+  restic:
+    image: eserdk/restic
+    build:
+      context: restic
+      dockerfile: Dockerfile
+    container_name: restic
+    networks: [ ]
+    restart: unless-stopped
+    env_file:
+      - ./restic/.env
+    volumes:
+      - ./mariadb-backup/backup/:/data/mariadb/:ro  # rm `:ro` for restore
+      - ./restic/data/:/mnt/restic/
+
+  mariadb:
+    image: mariadb:10.6  # stable as of 16.10.2021
+    container_name: mariadb
+    networks:
+      - mariadb
+    restart: unless-stopped
+    env_file:
+      - ./mariadb/.env
+    volumes:
+      - ./mariadb/data/:/var/lib/mysql/
+      - ./mariadb/init/:/docker-entrypoint-initdb.d/:ro
+    healthcheck:
+      test: mysqladmin ping -s -u root -p$$MYSQL_ROOT_PASSWORD
+      interval: 30s
+      timeout: 3s
+      retries: 10
+
+  mariadb-backup:
+    image: eserdk/mariadb-backup
+    build:
+      context: mariadb-backup
+      dockerfile: Dockerfile
+    container_name: mariadb-backup
+    networks:
+      - mariadb
+    restart: unless-stopped
+    env_file:
+      - ./mariadb/.env
+      - ./mariadb-backup/.env
+    volumes:
+      - ./mariadb-backup/backup/:/opt/mysql/backup/  # <--- target directory for backups
+      - ./mariadb-backup/scripts/:/scripts/:ro
+    depends_on:
+      - mariadb
+    healthcheck:
+      test: mysqladmin ping -s -h mariadb -u root -p$$MYSQL_ROOT_PASSWORD
+      interval: 30s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    networks:
+      - redis
+    restart: unless-stopped
+    volumes:
+      - ./redis/data/:/data/
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 3s
+      retries: 10
+
+  notes-gateway:
+    image: standardnotes/api-gateway:1.26.0  # stable as of 16.10.2021
+    container_name: notes-gateway
+    networks:
+      - traefik
+      - notes
+    restart: unless-stopped
+    env_file:
+      - ./notes-gateway/.env
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.notes-gateway.rule=Host(`notes.<YOUR_DOMAIN>.com`)  # FIXME
+      - traefik.http.routers.notes-gateway.entrypoints=websecure  # allow only https / 443
+      - traefik.http.routers.notes-gateway.tls=true
+      - traefik.http.routers.notes-gateway.service=notes-gateway
+      - traefik.http.routers.notes-gateway.tls.certresolver=letsencrypt
+      - traefik.http.services.notes-gateway.loadbalancer.server.port=3000
+    depends_on:
+      - notes-auth
+      - notes-sync
+    entrypoint: [
+        "./wait-for.sh", "notes-auth", "3000",
+        "./wait-for.sh", "notes-sync", "3000",
+        "./docker/entrypoint.sh", "start-web"
+    ]
+
+  notes-sync:
+    image: standardnotes/syncing-server-js:1.42.3  # stable as of 16.10.2021
+    container_name: notes-sync
+    networks:
+      - notes
+      - mariadb
+      - redis
+    restart: unless-stopped
+    env_file:
+      - ./notes-sync/.env
+    depends_on:
+      - mariadb
+      - redis
+    entrypoint: [
+        "./wait-for.sh", "mariadb", "3306",
+        "./wait-for.sh", "redis", "6379",
+        "./docker/entrypoint.sh", "start-web"
+    ]
+
+  notes-sync-worker:
+    image: standardnotes/syncing-server-js:1.42.3  # stable as of 16.10.2021
+    container_name: notes-sync-worker
+    networks:
+      - notes
+      - mariadb
+      - redis
+    restart: unless-stopped
+    env_file:
+      - ./notes-sync/.env
+    depends_on:
+      - mariadb
+      - redis
+      - notes-sync
+    entrypoint: [
+        "./wait-for.sh", "mariadb", "3306",
+        "./wait-for.sh", "redis", "6379",
+        "./wait-for.sh", "notes-sync", "3000",
+        "./docker/entrypoint.sh", "start-worker"
+    ]
+
+  notes-auth:
+    image: standardnotes/auth:1.24.0  # stable as of 16.10.2021
+    container_name: notes-auth
+    networks:
+      - notes
+      - mariadb
+      - redis
+    restart: unless-stopped
+    env_file:
+      - ./notes-auth/.env
+    depends_on:
+      - mariadb
+      - redis
+      - notes-sync
+    entrypoint: [
+        "./wait-for.sh", "mariadb", "3306",
+        "./wait-for.sh", "redis", "6379",
+        "./wait-for.sh", "notes-sync", "3000",
+        "./docker/entrypoint.sh", "start-web"
+    ]
+
+  notes-auth-worker:
+    image: standardnotes/auth:1.24.0  # stable as of 16.10.2021
+    container_name: notes-auth-worker
+    networks:
+      - notes
+      - mariadb
+      - redis
+    restart: unless-stopped
+    env_file:
+      - ./notes-auth/.env
+    depends_on:
+      - mariadb
+      - redis
+      - notes-auth
+    entrypoint: [
+        "./wait-for.sh", "mariadb", "3306",
+        "./wait-for.sh", "redis", "6379",
+        "./wait-for.sh", "notes-auth", "3000",
+        "./docker/entrypoint.sh", "start-worker"
+    ]
+
+  notes-extensions:
+    image: nginx
+    container_name: notes-extensions
+    networks:
+      - traefik
+      - notes
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.notes-extensions.rule=Host(`notes.<YOUR_DOMAIN>.com`) && PathPrefix(`/extensions`)  # FIXME
+      - traefik.http.routers.notes-extensions.entrypoints=websecure
+      - traefik.http.routers.notes-extensions.tls=true
+      - traefik.http.routers.notes-extensions.service=notes-extensions
+      - traefik.http.routers.notes-extensions.tls.certresolver=letsencrypt
+      - traefik.http.services.notes-extensions.loadbalancer.server.port=80
+    volumes:
+      - ./notes-extensions/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./notes-extensions/public/:/var/www/extensions/public/:ro
+
+  notes-extensions-updater:
+    image: eserdk/notes-extensions-updater
+    build:
+      context: notes-extensions-updater
+      dockerfile: Dockerfile
+    container_name: notes-extensions-updater
+    restart: unless-stopped
+    env_file:
+      - ./notes-extensions-updater/.env
+    volumes:
+      - ./notes-extensions-updater/update:/etc/cron.d/update:ro
+      - ./notes-extensions-updater/extensions/:/app/extensions/:ro
+      - ./notes-extensions/public/:/app/public/  # <--- target for built extensions
+
+networks:
+  traefik:
+    name: traefik
+  mariadb:
+    name: mariadb
+  redis:
+    name: redis
+  notes:
+    name: notes
