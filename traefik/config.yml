@@ -12,7 +12,7 @@ entryPoints:
 
 providers:
   docker:
-    network: global
+    network: traefik
     exposedByDefault: false
 
 api:
