@@ -28,7 +28,7 @@ and `NOTES_PASSWORD` environment variables.
 
 ### MariaDB-Backup
 
-You'd need to adjust how often you need to want backups using the `BACKUP_CRON_JOB` variable.
+You'd need to adjust how often you want to create backups using the `BACKUP_CRON_JOB` variable.
 
 ### Notes-Auth
 
@@ -58,7 +58,7 @@ Click [here](https://docs.standardnotes.com/self-hosting/getting-started) for mo
 
 ### Restic
 
-You'd need to adjust how often you want to create backups using the `BACKUP_CRON` variable.
+You'd need to adjust how often you want to create snapshots using the `BACKUP_CRON` variable.
 
 `RESTIC_REPOSITORY` is your S3 bucket address.
 
