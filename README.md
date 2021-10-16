@@ -33,8 +33,8 @@ You'd need to adjust how often you want to create backups using the `BACKUP_CRON
 
 ### Notes-Auth
 
-Replace `JWT_SECRET`, `LEGACY_JWT_SECRET` and `PSEUDO_KEY_PARAMS_KEY` environment variables however
-you like and keep them secret.
+Replace `JWT_SECRET`, `LEGACY_JWT_SECRET` and `PSEUDO_KEY_PARAMS_KEY` environment variables with
+whatever you like and keep them secret.
 
 Replace `ENCRYPTION_SERVER_KEY` with a value generated with `openssl rand -hex 32`.
 
