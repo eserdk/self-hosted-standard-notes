@@ -10,10 +10,11 @@ bucket. It also includes Standard Notes extensions automated updater and server.
 
 - [standardnotes/standalone](https://github.com/standardnotes/standalone) was used as a base repo
   for standard notes services. Licensed
-  under [Apache License 2.0](https://github.com/lobaro/restic-backup-docker/blob/master/LICENSE).
+  under [GNU Affero General Public License v3.0](https://github.com/standardnotes/standalone/blob/main/LICENSE.txt)
+  .
 - [lobaro/restic-backup-docker](https://github.com/lobaro/restic-backup-docker) was used as a base
   repo for restic configuration. Licensed
-  under [GNU Affero General Public License v3.0](https://github.com/standardnotes/standalone/blob/main/LICENSE.txt)
+  under [Apache License 2.0](https://github.com/lobaro/restic-backup-docker/blob/master/LICENSE)
   .
 - [iganeshk/standardnotes-extensions](https://github.com/iganeshk/standardnotes-extensions) was used
   as a base repo for writing `notes-extensions-updater`. Licensed
