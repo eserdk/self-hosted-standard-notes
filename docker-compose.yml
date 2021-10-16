@@ -23,7 +23,7 @@ services:
       - traefik.http.routers.dashboard.tls=true
       - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
       - traefik.http.routers.dashboard.middlewares=auth
-      - traefik.http.middlewares.auth.digestauth.users=eserdk:traefik:1f23f4775a51a0e3c6dedf91b4c28531  # FIXME
+      - traefik.http.middlewares.auth.digestauth.users=eserdk:traefik:1f23f4775a51a0e3c6dedf91b4c28531  # FIXME `htdigest -c htpasswd traefik USERNAME`
     healthcheck:
       test: [ "CMD", "traefik" ,"healthcheck" ]
       interval: 30s
