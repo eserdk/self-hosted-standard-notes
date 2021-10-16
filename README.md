@@ -66,8 +66,7 @@ You'd need to adjust how often you want to create backups using the `BACKUP_CRON
 
 `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are your S3 bucket access variables.
 
-Click [here](#https://github.com/Lobaro/restic-backup-docker#environment-variables
-) for more info.
+Click [here](https://github.com/Lobaro/restic-backup-docker#environment-variables) for more info.
 
 # How to use
 
