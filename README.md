@@ -1,7 +1,8 @@
 # Self Hosted Standard Notes Configuration
 
-This repository contains configuration needed to deploy self-hosted Standard Notes server.
-
+This repository contains configuration needed to deploy self-hosted Standard Notes server.  
+Configuration includes automated database backups as well as their encryption and storing to S3
+bucket. It also includes automated Standard Notes extensions updater and server.
 ---
 
 # Acknowledgments
@@ -17,14 +18,63 @@ This repository contains configuration needed to deploy self-hosted Standard Not
   as a base repo for writing `notes-extensions-updater`. Licensed
   under [MIT License](https://github.com/iganeshk/standardnotes-extensions/blob/master/LICENSE).
 
+# Configuration
+
+### MariaDB
+
+Everything should be pretty obvious here. Replace `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`
+and `NOTES_PASSWORD` environment variables.
+
+### MariaDB-Backup
+
+You'd need to adjust how often you need to want backups using the `BACKUP_CRON_JOB` variable.
+
+### Notes-Auth
+
+Replace `JWT_SECRET`, `LEGACY_JWT_SECRET` and `PSEUDO_KEY_PARAMS_KEY` environment variables however
+you like and keep them secret.
+
+Replace `ENCRYPTION_SERVER_KEY` with a value generated with `openssl rand -hex 32`.
+
+`DB_PASSWORD` should be the same as `NOTES_PASSWORD` defined above in the `MariaDB` section.
+
+Click [here](https://docs.standardnotes.com/self-hosting/getting-started) for more info.
+
+### Notes-Extensions-Updater
+
+`HOST` is basically `https://notes.<YOUR_DOMAIN>.com`.
+
+`GH_USERNAME` is your github username, `GH_TOKEN` is
+your [github personal token](https://github.com/settings/tokens) with `public_repo` permission.
+
+### Notes-Sync
+
+`AUTH_JWT_SECRET` should be the same as `JWT_SECRET` mentioned above in the `Notes-Auth` section.
+
+`DB_PASSWORD` should be the same as `NOTES_PASSWORD` mentioned above in the `MariaDB` section.
+
+Click [here](https://docs.standardnotes.com/self-hosting/getting-started) for more info.
+
+### Restic
+
+You'd need to adjust how often you want to create backups using the `BACKUP_CRON` variable.
+
+`RESTIC_REPOSITORY` is your S3 bucket address.
+
+`RESTIC_PASSWORD` is a password for your snapshots.
+
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are your S3 bucket access variables.
+
+Click [here](#https://github.com/Lobaro/restic-backup-docker#environment-variables
+) for more info.
+
 # How to use
 
-You'd basically need to:
+Once you start the server with `docker compose up -d`, it becomes accessible on 443 port (
+https).
 
-- change several config parameters, e.g. your domain name in `docker-compose.yml` in labels
-  sections;
-- create `.env` file in every directory containing `sample.env` and change all the parameters needed
-  accordingly, especially those that contain credentials.
+To start using extensions, copy the `https://notes.<YOUR_DOMAIN>.com/extensions/index.json` and
+paste it to the `Enter Your Extended Activation Code` field in Standard Notes app.
 
 # Notes
 
